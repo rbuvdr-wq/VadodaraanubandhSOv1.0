@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vadodara Region Anubandh SO Dashboard</title>
+    <!-- Tailwind for layout, FontAwesome for icons, SheetJS for Excel export -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --silver: #C0C0C0;
+            --diamond: #FFFFFF;
+            --bg-dark: #0a0a0c;
+            --glass: rgba(255, 255, 255, 0.28); 
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --primary-text: #FFFFFF;
+            --secondary-text: #E5E5E5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1a1a2e, #050505);
+            color: var(--primary-text);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        body.light-mode {
+            background: radial-gradient(circle at top right, #ffffff, #f0f0f0);
+            --glass: rgba(0, 0, 0, 0.12);
+            --glass-border: rgba(0, 0, 0, 0.2);
+            --primary-text: #000000;
+            --secondary-text: #1A1A1A;
+            color: var(--primary-text);
+        }
+
+        .luxury-title {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(to right, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--glass-border);
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+            padding: 1.5rem;
+        }
+
+        body.light-mode .glass-panel {
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            color: #FFF !important; /* Ensure visibility on colorful cards */
+        }
+        
+        body.light-mode .kpi-value { text-shadow: none; color: #000 !important; }
+
+        .kpi-label {
+            font-size: 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #FFF !important;
+            opacity: 1;
+        }
+        body.light-mode .kpi-label { color: #000 !important; }
+
+        /* VIBRANT KPI CARDS */
+        .card-parcel { border-color: #3b82f6 !important; background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1)); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+        .card-domestic { border-color: #a855f7 !important; background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(168, 85, 247, 0.1)); box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+        .card-intl { border-color: #ec4899 !important; background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(236, 72, 153, 0.1)); box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); }
+        .card-total { border-color: #f59e0b !important; background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(245, 158, 11, 0.1)); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .card-posb { border-color: #10b981 !important; background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1)); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        .card-pli { border-color: #06b6d4 !important; background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(6, 182, 212, 0.1)); box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+
+        .spinner-container { width: 50px; height: 50px; position: relative; }
+        .countdown-circle { transform: rotate(-90deg); }
+        .countdown-circle circle { fill: none; stroke-width: 4; stroke-dasharray: 126; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+
+        table thead th {
+            position: sticky;
+            top: 0;
+            background: #000;
+            z-index: 10;
+            color: #FFF;
+            font-weight: 900;
+            padding: 1rem;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+
+        body.light-mode table thead th { background: #1a1a1a; color: #FFF; }
+
+        .sticky-col { position: sticky; left: 0; z-index: 5; background: #0a0a0c !important; border-right: 2px solid var(--gold); }
+        body.light-mode .sticky-col { background: #ffffff !important; }
+
+        /* RAINBOW TABLE COLUMNS (Table 3) */
+        .col-group-1 { background-color: rgba(255, 235, 59, 0.18) !important; } /* Yellow */
+        .col-group-2 { background-color: rgba(233, 30, 99, 0.18) !important; }  /* Pink */
+        .col-group-3 { background-color: rgba(156, 39, 176, 0.18) !important; } /* Purple */
+        .col-group-4 { background-color: rgba(33, 150, 243, 0.18) !important; } /* Blue */
+        .col-group-5 { background-color: rgba(255, 152, 0, 0.18) !important; }  /* Orange */
+        .col-group-6 { background-color: rgba(76, 175, 80, 0.18) !important; }  /* Green */
+
+        body.light-mode .col-group-1 { background-color: rgba(255, 235, 59, 0.35) !important; }
+        body.light-mode .col-group-2 { background-color: rgba(233, 30, 99, 0.35) !important; }
+        body.light-mode .col-group-3 { background-color: rgba(156, 39, 176, 0.35) !important; }
+        body.light-mode .col-group-4 { background-color: rgba(33, 150, 243, 0.35) !important; }
+        body.light-mode .col-group-5 { background-color: rgba(255, 152, 0, 0.35) !important; }
+        body.light-mode .col-group-6 { background-color: rgba(76, 175, 80, 0.35) !important; }
+
+        /* MOBILE OPTIMIZED VIEW OVERRIDES */
+        .mobile-optimized-view .patch-a-grid { grid-template-columns: 1fr !important; }
+        .mobile-optimized-view #info-grid, .mobile-optimized-view #target-grid { grid-template-columns: 1fr !important; }
+        .mobile-optimized-view .data-table-container { overflow-x: auto; }
+        .mobile-optimized-view .glass-panel { margin-bottom: 1.5rem; }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; border: 2px solid #000; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Header Section -->
+    <header class="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
+        <div>
+            <h1 class="text-4xl md:text-6xl font-bold luxury-title tracking-tighter">VADODARA REGION</h1>
+            <p class="text-sm md:text-xl font-bold tracking-widest opacity-90 mt-1 uppercase text-[var(--secondary-text)]">Anubandh SO Performance Command Center</p>
+        </div>
+
+        <div class="flex items-center gap-6 glass-panel py-4 px-8">
+            <div class="flex items-center gap-4">
+                <div class="spinner-container">
+                    <svg class="countdown-circle" width="44" height="44">
+                        <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,0.1)"></circle>
+                        <circle id="timer-progress" cx="22" cy="22" r="20" stroke="#FFD600"></circle>
+                    </svg>
+                    <div id="timer-text" class="absolute inset-0 flex items-center justify-center text-sm font-black">60</div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] uppercase font-black opacity-70">Sync Status</span>
+                    <span id="sync-status" class="text-xs text-green-500 font-black">LIVE</span>
+                </div>
+            </div>
+
+            <div class="h-10 w-[2px] bg-white/20"></div>
+
+            <div class="flex gap-4">
+                <button id="theme-toggle" class="p-3 hover:scale-110 transition-transform bg-white/5 rounded-full" title="Toggle Light/Dark Mode">
+                    <i class="fas fa-moon fa-lg"></i>
+                </button>
+                <button id="view-toggle" class="p-3 hover:scale-110 transition-transform bg-white/5 rounded-full" title="Toggle Desktop/Mobile Optimized View">
+                    <i class="fas fa-desktop fa-lg"></i>
+                </button>
+                <button id="export-full" class="p-3 hover:scale-110 transition-transform bg-white/5 rounded-full text-yellow-400" title="Export Full CSV">
+                    <i class="fas fa-file-excel fa-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="space-y-12">
+        
+        <!-- LOADER WITH AUTO-DISMISS FAILSAFE -->
+        <div id="loader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-xl">
+            <div class="w-20 h-20 border-8 border-t-gold border-r-transparent border-b-silver border-l-transparent rounded-full animate-spin"></div>
+            <p class="mt-6 text-gold font-black text-xl tracking-[0.3em] animate-pulse uppercase">Connecting to Cloud Data...</p>
+            <p class="text-white/40 text-xs mt-2 italic">Dashboard will reveal automatically</p>
+        </div>
+
+        <!-- FILTERS -->
+        <section class="glass-panel">
+            <h2 class="text-2xl font-black mb-6 flex items-center gap-3 uppercase border-b-2 border-gold/30 pb-2">
+                <i class="fas fa-filter text-gold"></i> Performance Matrix Filters
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <label class="kpi-label mb-2 block">Division Name</label>
+                    <select id="filter-division" class="w-full bg-black/70 border-2 border-white/20 rounded-xl p-4 font-bold text-white focus:border-gold outline-none">
+                        <option value="">All Divisions</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="kpi-label mb-2 block">Subdivision</label>
+                    <select id="filter-subdivision" disabled class="w-full bg-black/70 border-2 border-white/20 rounded-xl p-4 font-bold text-white opacity-50 cursor-not-allowed">
+                        <option value="">Select Division First</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="kpi-label mb-2 block">Office Name</label>
+                    <select id="filter-office" disabled class="w-full bg-black/70 border-2 border-white/20 rounded-xl p-4 font-bold text-white opacity-50 cursor-not-allowed">
+                        <option value="">Select Subdivision First</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- PART A: PERFORMANCE MATRIX -->
+        <section class="grid grid-cols-1 xl:grid-cols-3 gap-8 patch-a-grid">
+            <div class="glass-panel flex flex-col">
+                <h3 class="text-lg font-black text-gold mb-6 uppercase flex items-center gap-2">
+                    <i class="fas fa-building"></i> Sub-Part 1: Office Info
+                </h3>
+                <div id="info-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1"></div>
+            </div>
+
+            <div class="glass-panel flex flex-col">
+                <h3 class="text-lg font-black text-gold mb-6 uppercase flex items-center gap-2">
+                    <i class="fas fa-bullseye"></i> Sub-Part 2: Targets
+                </h3>
+                <div id="target-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1"></div>
+            </div>
+
+            <div class="glass-panel flex flex-col lg:col-span-1 xl:col-span-1">
+                <h3 class="text-lg font-black text-gold mb-6 uppercase flex items-center gap-2">
+                    <i class="fas fa-trophy"></i> Sub-Part 3: Achievement
+                </h3>
+                <div id="achievement-grid" class="grid grid-cols-1 gap-4 flex-1"></div>
+            </div>
+        </section>
+
+        <!-- PART B: PERFORMANCE DISTRIBUTION -->
+        <section class="glass-panel">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b-2 border-gold/30 pb-4">
+                <h2 class="text-2xl font-black flex items-center gap-3 uppercase">
+                    <i class="fas fa-chart-line text-gold"></i> Distribution Bracket
+                </h2>
+                <div class="flex flex-wrap gap-4 w-full md:w-auto">
+                    <select id="dist-division" class="bg-black/70 border-2 border-white/20 rounded-lg p-3 font-bold text-xs outline-none">
+                        <option value="ALL">All Divisions</option>
+                    </select>
+                    <select id="dist-param" class="bg-black/70 border-2 border-white/20 rounded-lg p-3 font-bold text-xs outline-none">
+                        <option value="Total_Revenue%">Total Revenue %</option>
+                        <option value="Parcel_Revenue%">Parcel Revenue %</option>
+                        <option value="Domestic_Mails_Revenue%">Domestic Mails %</option>
+                        <option value="Intl_Mail_Revenue%">Intl Mails %</option>
+                        <option value="POSB_NetAddition%">POSB %</option>
+                        <option value="PLI_RPLI_Initial_Prem%">PLI/RPLI %</option>
+                    </select>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b-2 border-white/10 uppercase font-black text-xs">
+                            <th class="p-6">Range Bracket</th>
+                            <th class="p-6 text-center">Unit Count</th>
+                            <th class="p-6 text-right">Data Export</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dist-body" class="font-bold divide-y divide-white/10"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- PART C: DIVISION AGGREGATION MATRIX -->
+        <section class="glass-panel">
+            <div class="flex justify-between items-center mb-8 border-b-2 border-gold/30 pb-4">
+                <h2 class="text-2xl font-black flex items-center gap-3 uppercase">
+                    <i class="fas fa-th text-gold"></i> Division Aggregation Matrix
+                </h2>
+                <button id="export-glance" class="bg-gold text-black font-black px-6 py-2 rounded-lg hover:scale-105 transition-transform uppercase text-xs">
+                    <i class="fas fa-download mr-2"></i> Download Matrix
+                </button>
+            </div>
+            <div class="data-table-container">
+                <table id="glance-table" class="w-full text-left border-collapse text-xs">
+                    <thead id="glance-head"></thead>
+                    <tbody id="glance-body" class="divide-y divide-white/5 font-black"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1u9R1ERVjHSYdusLWMqXCedmnoVMRU21FbaTOdECsx9U/gviz/tq?tqx=out:csv&sheet=AnubandhSO";
+        let rawData = [];
+        let filteredData = [];
+        let timer = 60;
+        let isDarkMode = true;
+        let isInitialLoad = true;
+        let isMobileView = false;
+
+        window.onload = async () => {
+            setupUIEvents();
+            
+            // Failsafe: Hide loader after 5 seconds regardless of network status
+            setTimeout(() => {
+                if (isInitialLoad) {
+                    console.warn("Sync taking too long, auto-dismissing loader.");
+                    const loader = document.getElementById('loader');
+                    if (loader) loader.style.display = 'none';
+                    isInitialLoad = false;
+                }
+            }, 5000);
+
+            await fetchData();
+            startTimer();
+            initFilters();
+            renderDashboard();
+        };
+
+        async function fetchData() {
+            const loader = document.getElementById('loader');
+            const syncStatus = document.getElementById('sync-status');
+            if (isInitialLoad && loader) loader.style.display = 'flex';
+            if (syncStatus) { 
+                syncStatus.innerText = "SYNCING..."; 
+                syncStatus.className = "text-xs text-yellow-400 font-black"; 
+            }
+
+            try {
+                const response = await fetch(SHEET_CSV_URL);
+                if (!response.ok) throw new Error("Network Error");
+                const csvText = await response.text();
+                rawData = parseCSV(csvText);
+                if (isInitialLoad) filteredData = [...rawData];
+                populateDropdowns();
+                updateDivisionGlance();
+                if (syncStatus) { 
+                    syncStatus.innerText = "LIVE"; 
+                    syncStatus.className = "text-xs text-green-500 font-black"; 
+                }
+            } catch (error) {
+                console.error("Fetch failed:", error);
+                if (syncStatus) { 
+                    syncStatus.innerText = "OFFLINE"; 
+                    syncStatus.className = "text-xs text-red-500 font-black"; 
+                }
+            } finally {
+                if (isInitialLoad && loader) { 
+                    loader.style.display = 'none'; 
+                    isInitialLoad = false; 
+                }
+            }
+        }
+
+        function parseCSV(csv) {
+            if (!csv || csv.length < 10) return [];
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+            return lines.slice(1).map(line => {
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/"/g, '').trim());
+                let obj = {};
+                headers.forEach((h, i) => {
+                    const val = values[i];
+                    obj[h] = isNaN(val) || val === "" ? val : parseFloat(val);
+                });
+                return obj;
+            }).filter(row => row.Division);
+        }
+
+        function renderDashboard() {
+            const infoGrid = document.getElementById('info-grid');
+            const targetGrid = document.getElementById('target-grid');
+            const achievementGrid = document.getElementById('achievement-grid');
+            if (!infoGrid || !targetGrid || !achievementGrid) return;
+
+            const active = filteredData.length === 1 ? filteredData[0] : aggregate(filteredData);
+
+            const infoFields = [
+                { label: 'Office Type', val: active.Office_Type || 'Aggregate' },
+                { label: 'Pincode', val: active.Pincode || 'Mixed' },
+                { label: 'Facility ID', val: active.Facility_ID || 'N/A' },
+                { label: 'Office ID', val: active.Office_ID || 'Mixed' },
+                { label: 'Rural/Urban', val: active.Rural_Urban || 'Mixed' },
+                { label: 'Class', val: active.Class || 'N/A' },
+                { label: 'Hands Type', val: active.office_hands_type || 'N/A' },
+                { label: 'Account Office', val: active.accounting_office_name || 'N/A' }
+            ];
+            infoGrid.innerHTML = infoFields.map(f => `<div class="bg-black/40 border border-white/10 rounded-lg p-4 transition-all hover:bg-black/60"><p class="kpi-label">${f.label}</p><p class="font-black text-sm truncate">${f.val}</p></div>`).join('');
+
+            const targetFields = [
+                { label: 'Parcel Target', val: active.Parcel_Target, isCurrency: true },
+                { label: 'Domestic Target', val: active.Domestic_Mails_Target, isCurrency: true },
+                { label: 'Intl Target', val: active.Intl_Mails_Target, isCurrency: true },
+                { label: 'Total Rev Target', val: active.Total_PORev_Target, isCurrency: true },
+                { label: 'POSB Target', val: active.POSB_Target, isCurrency: false },
+                { label: 'PLI/RPLI Target', val: active.PLI_RPLI_Target, isCurrency: true }
+            ];
+            targetGrid.innerHTML = targetFields.map(f => `<div class="bg-black/40 border border-white/10 rounded-lg p-4"><p class="kpi-label">${f.label}</p><p class="kpi-value text-gold">${f.isCurrency ? '₹' : ''}${(f.val || 0).toLocaleString()}</p></div>`).join('');
+
+            const achGroups = [
+                { title: 'Parcel', rev: 'Parcel_Revenue', pct: 'Parcel_Revenue%', isCurrency: true, class: 'card-parcel' },
+                { title: 'Domestic Mails', rev: 'Domestic_Mails_Revenue', pct: 'Domestic_Mails_Revenue%', isCurrency: true, class: 'card-domestic' },
+                { title: 'International', rev: 'Intl_Mail_Revenue', pct: 'Intl_Mail_Revenue%', isCurrency: true, class: 'card-intl' },
+                { title: 'Total Revenue', rev: 'Total_Revenue', pct: 'Total_Revenue%', isCurrency: true, class: 'card-total' },
+                { title: 'POSB Net Add', rev: 'POSB_NetAddition', pct: 'POSB_NetAddition%', isCurrency: false, class: 'card-posb' },
+                { title: 'PLI/RPLI Prem', rev: 'PLI_RPLI_Initial_Prem', pct: 'PLI_RPLI_Initial_Prem%', isCurrency: true, class: 'card-pli' }
+            ];
+            achievementGrid.innerHTML = achGroups.map(g => {
+                const p = parseFloat(active[g.pct]) || 0;
+                let statusIcon = p >= 100 ? 'fa-check-double' : (p >= 75 ? 'fa-arrow-trend-up' : (p >= 50 ? 'fa-minus' : 'fa-exclamation-circle'));
+                return `<div class="border-2 rounded-xl p-5 transition-all hover:scale-[1.03] ${g.class}"><div class="flex justify-between items-center mb-1"><span class="kpi-label">${g.title}</span><span class="font-black text-lg">${p.toFixed(1)}% <i class="fas ${statusIcon} ml-1"></i></span></div><p class="kpi-value">${g.isCurrency ? '₹' : ''}${(active[g.rev] || 0).toLocaleString()}</p></div>`;
+            }).join('');
+
+            updateDistributionTable();
+        }
+
+        function aggregate(data) {
+            if (!data || data.length === 0) return {};
+            const res = {};
+            const keys = ['Parcel_Target', 'Domestic_Mails_Target', 'Intl_Mails_Target', 'Total_PORev_Target', 'POSB_Target', 'PLI_RPLI_Target',
+                          'Parcel_Revenue', 'Domestic_Mails_Revenue', 'Intl_Mail_Revenue', 'Total_Revenue', 'POSB_NetAddition', 'PLI_RPLI_Initial_Prem'];
+            keys.forEach(k => res[k] = data.reduce((sum, row) => sum + (parseFloat(row[k]) || 0), 0));
+            res['Parcel_Revenue%'] = (res.Parcel_Revenue / res.Parcel_Target) * 100 || 0;
+            res['Domestic_Mails_Revenue%'] = (res.Domestic_Mails_Revenue / res.Domestic_Mails_Target) * 100 || 0;
+            res['Intl_Mail_Revenue%'] = (res.Intl_Mail_Revenue / res.Intl_Mails_Target) * 100 || 0;
+            res['Total_Revenue%'] = (res.Total_Revenue / res.Total_PORev_Target) * 100 || 0;
+            res['POSB_NetAddition%'] = (res.POSB_NetAddition / res.POSB_Target) * 100 || 0;
+            res['PLI_RPLI_Initial_Prem%'] = (res.PLI_RPLI_Initial_Prem / res.PLI_RPLI_Target) * 100 || 0;
+            return res;
+        }
+
+        function updateDistributionTable() {
+            const div = document.getElementById('dist-division')?.value || 'ALL';
+            const param = document.getElementById('dist-param')?.value || 'Total_Revenue%';
+            const source = div === 'ALL' ? rawData : rawData.filter(r => r.Division === div);
+            const brackets = [
+                { label: '100% or more', filter: v => v >= 100, color: 'text-green-500' },
+                { label: '75 to 99%', filter: v => v >= 75 && v < 100, color: 'text-yellow-500' },
+                { label: '50 to 74%', filter: v => v >= 50 && v < 75, color: 'text-orange-500' },
+                { label: '25 to 49%', filter: v => v >= 25 && v < 50, color: 'text-red-500' },
+                { label: 'Less than 25%', filter: v => v < 25, color: 'text-red-700' }
+            ];
+            const tbody = document.getElementById('dist-body');
+            if (tbody) {
+                tbody.innerHTML = brackets.map(b => {
+                    const matching = source.filter(r => b.filter(parseFloat(r[param]) || 0));
+                    const ids = matching.map(m => m.Office_ID);
+                    return `
+                        <tr class="hover:bg-white/10 transition-colors">
+                            <td class="p-6 font-black">${b.label}</td>
+                            <td class="p-6 text-center"><span class="px-5 py-2 rounded-full bg-black/50 border border-white/20 ${b.color} font-black text-xl">${matching.length}</span></td>
+                            <td class="p-6 text-right">
+                                <button onclick='downloadBracketExcel("${b.label}", ${JSON.stringify(ids)})' class="text-gold font-black hover:scale-110 transition-transform uppercase text-xs tracking-tighter">
+                                    <i class="fas fa-file-excel mr-1"></i> Download Bracket
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function downloadBracketExcel(label, ids) {
+            const subset = rawData.filter(r => ids.includes(r.Office_ID));
+            exportToExcel(subset, `Offices_${label.replace(/\s+/g, '_')}`);
+        }
+
+        function updateDivisionGlance() {
+            const divisions = [...new Set(rawData.map(r => r.Division))].sort();
+            const metrics = ['Parcel_Target', 'Parcel_Revenue', 'Domestic_Mails_Target', 'Domestic_Mails_Revenue', 'Intl_Mails_Target', 'Intl_Mail_Revenue', 'Total_PORev_Target', 'Total_Revenue', 'POSB_Target', 'POSB_NetAddition', 'PLI_RPLI_Target', 'PLI_RPLI_Initial_Prem'];
+            
+            const head = document.getElementById('glance-head');
+            if (head) {
+                head.innerHTML = `
+                    <tr class="text-[10px] uppercase font-black text-silver/40">
+                        <th class="p-6 sticky-col">Division Name</th>
+                        ${metrics.map((m, i) => {
+                            const groupIdx = Math.floor(i / 2) + 1;
+                            return `<th class="p-6 text-center min-w-[140px] col-group-${groupIdx}">${m.replace(/_/g, ' ')}</th>`;
+                        }).join('')}
+                    </tr>
+                `;
+            }
+
+            const body = document.getElementById('glance-body');
+            if (body) {
+                body.innerHTML = divisions.map(d => {
+                    const divData = rawData.filter(r => r.Division === d);
+                    return `
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="p-6 font-black sticky-col text-gold uppercase border-r-2 border-gold/30">${d}</td>
+                            ${metrics.map((m, i) => {
+                                const sum = divData.reduce((s, row) => s + (parseFloat(row[m]) || 0), 0);
+                                const groupIdx = Math.floor(i / 2) + 1;
+                                const isCurrency = !(m.includes('POSB'));
+                                return `<td class="p-6 text-center font-black col-group-${groupIdx}">${isCurrency ? '₹' : ''}${sum.toLocaleString()}</td>`;
+                            }).join('')}
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function populateDropdowns() {
+            const divSelect = document.getElementById('filter-division');
+            const distDivSelect = document.getElementById('dist-division');
+            if (divSelect && divSelect.options.length <= 1) {
+                const divisions = [...new Set(rawData.map(r => r.Division))].sort();
+                divisions.forEach(d => {
+                    divSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                    distDivSelect.innerHTML += `<option value="${d}">${d}</option>`;
+                });
+            }
+        }
+
+        function populateSubdivisions(div) {
+            const subSelect = document.getElementById('filter-subdivision');
+            if (!subSelect) return;
+            subSelect.innerHTML = '<option value="">All Subdivisions</option>';
+            if (!div) return;
+            const subs = [...new Set(rawData.filter(r => r.Division === div).map(r => r.Subdivision))].sort();
+            subs.forEach(s => subSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        }
+
+        function populateOffices(div, sub) {
+            const offSelect = document.getElementById('filter-office');
+            if (!offSelect) return;
+            offSelect.innerHTML = '<option value="">All Offices</option>';
+            if (!sub) return;
+            const offs = [...new Set(rawData.filter(r => r.Division === div && r.Subdivision === sub).map(r => r.Office_Name))].sort();
+            offs.forEach(o => offSelect.innerHTML += `<option value="${o}">${o}</option>`);
+        }
+
+        function applyHierarchicalFilter() {
+            const d = document.getElementById('filter-division').value;
+            const s = document.getElementById('filter-subdivision').value;
+            const o = document.getElementById('filter-office').value;
+            filteredData = rawData.filter(r => (!d || r.Division === d) && (!s || r.Subdivision === s) && (!o || r.Office_Name === o));
+            renderDashboard();
+        }
+
+        function startTimer() { setInterval(() => { timer--; if (timer < 0) { timer = 60; fetchData().then(() => renderDashboard()); } const txt = document.getElementById('timer-text'); if(txt) txt.innerText = timer; const prog = document.getElementById('timer-progress'); if(prog) prog.style.strokeDashoffset = 126 - (126 * timer) / 60; }, 1000); }
+
+        function exportToExcel(data, filename) {
+            if(!data || data.length === 0) return;
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data");
+            XLSX.writeFile(wb, `${filename}.xlsx`);
+        }
+
+        function initFilters() {
+            const divSelect = document.getElementById('filter-division');
+            const subSelect = document.getElementById('filter-subdivision');
+            const offSelect = document.getElementById('filter-office');
+            if (divSelect) {
+                divSelect.onchange = () => {
+                    const val = divSelect.value;
+                    subSelect.disabled = !val;
+                    subSelect.style.opacity = val ? "1" : "0.5";
+                    populateSubdivisions(val);
+                    applyHierarchicalFilter();
+                };
+            }
+            if (subSelect) {
+                subSelect.onchange = () => {
+                    offSelect.disabled = !subSelect.value;
+                    offSelect.style.opacity = subSelect.value ? "1" : "0.5";
+                    populateOffices(divSelect.value, subSelect.value);
+                    applyHierarchicalFilter();
+                };
+            }
+            if (offSelect) offSelect.onchange = applyHierarchicalFilter;
+            const dd = document.getElementById('dist-division');
+            const dp = document.getElementById('dist-param');
+            if(dd) dd.onchange = updateDistributionTable;
+            if(dp) dp.onchange = updateDistributionTable;
+        }
+
+        function setupUIEvents() {
+            const themeBtn = document.getElementById('theme-toggle');
+            if (themeBtn) {
+                themeBtn.onclick = () => {
+                    document.body.classList.toggle('light-mode');
+                    isDarkMode = !isDarkMode;
+                    themeBtn.innerHTML = isDarkMode ? '<i class="fas fa-moon fa-lg"></i>' : '<i class="fas fa-sun fa-lg"></i>';
+                };
+            }
+
+            const viewBtn = document.getElementById('view-toggle');
+            if (viewBtn) {
+                viewBtn.onclick = () => {
+                    isMobileView = !isMobileView;
+                    document.body.classList.toggle('mobile-optimized-view');
+                    viewBtn.innerHTML = isMobileView ? '<i class="fas fa-mobile-alt fa-lg text-gold"></i>' : '<i class="fas fa-desktop fa-lg"></i>';
+                    viewBtn.title = isMobileView ? "Switch to Desktop Layout" : "Switch to Mobile Cascading Tiles";
+                };
+            }
+
+            const expFull = document.getElementById('export-full');
+            if (expFull) expFull.onclick = () => exportToExcel(rawData, "Full_Vadodara_Dataset");
+            
+            const expGlance = document.getElementById('export-glance');
+            if (expGlance) expGlance.onclick = () => XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('glance-table')), "Division_Matrix.xlsx");
+        }
+    </script>
+</body>
+</html>
